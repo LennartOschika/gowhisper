@@ -34,6 +34,31 @@ func main() {
 					return nil
 				},
 			},
+			{
+				Name:    "setPath",
+				Aliases: []string{"sp"},
+				Usage:   "Sets the full path to the output directory",
+				Action: func(c *cli.Context) error {
+					path := c.Args().First()
+					if path == "" {
+						return cli.Exit("Please provide an output directory.", 1)
+					}
+
+					_, err := os.Stat(path)
+					if err != nil {
+						if os.IsNotExist(err) {
+							return cli.Exit("Output directory does not exist.", 1)
+						}
+					}
+
+					err = SetOutputDirectory(path)
+					if err != nil {
+						return cli.Exit("Something failed saving output path.", 1)
+					}
+					fmt.Printf("Set output directory: %s\n", path)
+					return nil
+				},
+			},
 		},
 	}
 
