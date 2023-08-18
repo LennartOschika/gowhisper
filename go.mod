@@ -1,6 +1,6 @@
 module github.com/LennartOschika/gowhisper
 
-go 1.21.0
+go 1.21
 
 require (
 	github.com/joho/godotenv v1.5.1
