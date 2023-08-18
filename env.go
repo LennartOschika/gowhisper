@@ -3,24 +3,43 @@ package main
 import (
 	"fmt"
 	"github.com/joho/godotenv"
+	"os"
+	"path/filepath"
 )
 
-func LoadEnviornmentVariables() error {
-	env, err := godotenv.Unmarshal("KEY2=cock")
-	if err != nil {
-		fmt.Println(err)
+func getEnvPath() string {
+	exePath, _ := os.Executable()
+
+	exeDirectory := filepath.Dir(exePath)
+
+	envFilePath := ".whisperenv"
+	_, err := os.Stat(envFilePath)
+	if err == nil {
+		return envFilePath
 	}
 
-	err = godotenv.Write(env, ".env")
+	envFilePath = filepath.Join(exeDirectory, ".whisperenv")
+	_, err = os.Stat(envFilePath)
+	if err == nil {
+		return envFilePath
+	}
 
+	return ""
+
+}
+
+func LoadEnvironmentVariables() error {
+
+	envFilePath := getEnvPath()
+	err := godotenv.Load(envFilePath)
 	if err != nil {
-		fmt.Println(err)
+		return err
 	}
 	return nil
 }
 
 func SetOutputDirectory(path string) error {
-	updateString := "OUTPUTPATH=" + path
+	updateString := "OUTPUTDIR=" + path
 	err := updateEnv(updateString)
 	if err != nil {
 		fmt.Println(err)
@@ -44,13 +63,16 @@ func updateEnv(variableString string) error {
 	if err != nil {
 		fmt.Println(err)
 	}
-	currentEnv, err := godotenv.Read(".env")
+
+	envFilePath := getEnvPath()
+
+	currentEnv, err := godotenv.Read(envFilePath)
 
 	for key, value := range newEnvVar {
 		currentEnv[key] = value
 	}
 
-	err = godotenv.Write(currentEnv, ".env")
+	err = godotenv.Write(currentEnv, envFilePath)
 
 	if err != nil {
 		fmt.Println(err)
