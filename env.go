@@ -3,29 +3,38 @@ package main
 import (
 	"fmt"
 	"github.com/joho/godotenv"
+	"log"
 	"os"
 	"path/filepath"
 )
+
+func fileExists(filename string) bool {
+	info, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return false
+	}
+	return !info.IsDir()
+}
 
 func getEnvPath() string {
 	exePath, _ := os.Executable()
 
 	exeDirectory := filepath.Dir(exePath)
 
-	envFilePath := ".whisperenv"
-	_, err := os.Stat(envFilePath)
-	if err == nil {
-		return envFilePath
+	log.Println(exeDirectory)
+
+	envFilePath := filepath.Join(exeDirectory, ".whisperenv")
+	if fileExists(envFilePath) {
+		log.Println("Environment variable file found")
+	} else {
+		_, err := os.Create(envFilePath)
+		if err != nil {
+			return ""
+		}
+		log.Println("Created new environment file in executable directory")
+
 	}
-
-	envFilePath = filepath.Join(exeDirectory, ".whisperenv")
-	_, err = os.Stat(envFilePath)
-	if err == nil {
-		return envFilePath
-	}
-
-	return ""
-
+	return envFilePath
 }
 
 func LoadEnvironmentVariables() error {
