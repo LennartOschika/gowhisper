@@ -43,10 +43,13 @@ func transcribe(audioFile string) error {
 	fmt.Printf("Creating file %s\n", fullFilePath)
 	f, err := os.Create(fullFilePath)
 	if err != nil {
-		return cli.Exit("Could not write outputfile "+fullFilePath, 1)
+		return cli.Exit("Could not create outputfile "+fullFilePath, 1)
 	}
 	defer f.Close()
-	f.WriteString(resp.Text)
+	_, err = f.WriteString(resp.Text)
+	if err != nil {
+		return err
+	}
 	fmt.Println("Successfully wrote subtitles to file.")
 	return nil
 }
