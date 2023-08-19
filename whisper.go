@@ -46,6 +46,7 @@ func transcribe(audioFile string) error {
 		return cli.Exit("Could not create outputfile "+fullFilePath, 1)
 	}
 	defer f.Close()
+
 	_, err = f.WriteString(resp.Text)
 	if err != nil {
 		return err
