@@ -16,7 +16,7 @@ func main() {
 	}
 
 	app := &cli.App{
-		Name: "gowhisper",
+		//Name: "gowhisper",
 		Usage: "Easily convert audio files into audio.\n" +
 			"Run \"gowhisper i\" to install the program and see to add it to your system's path variable." +
 			"That way you can call this program from anywhere.\n" +
