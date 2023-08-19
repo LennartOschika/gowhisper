@@ -23,7 +23,7 @@ func askAPIKey(reader *bufio.Reader) string {
 }
 
 func askOutputPath(reader *bufio.Reader) string {
-	fmt.Print("Enter the desired output path (optional): ")
+	fmt.Print("Enter the desired output path (optional, e.g C:\\output\\): ")
 	outputPath, _ := reader.ReadString('\n')
 	outputPath = strings.TrimSpace(outputPath)
 
