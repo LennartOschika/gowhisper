@@ -1,13 +1,55 @@
 package main
 
 import (
+	"bufio"
+	"errors"
 	"fmt"
 	"github.com/urfave/cli/v2"
 	"log"
 	"os"
-	"path/filepath"
-	"strings"
 )
+
+func setupFirst() bool {
+	if checkEnvPath() == "" {
+		return true
+	}
+	return false
+}
+
+func setupVariables() {
+	setupApp := &cli.App{
+		Action: func(c *cli.Context) error {
+			fmt.Print(".whisperenv file not found. \nPlease setup the following values before you can use the program.\n\n")
+			reader := bufio.NewReader(os.Stdin)
+
+			apiKey := askAPIKey(reader)
+
+			outputPath := loopOutputPath(reader)
+
+			fmt.Printf("Got api KEY: %s\nGot output path: %s\n", apiKey, outputPath)
+			err := createEnvFile()
+			if err != nil {
+				return err
+			}
+			err = SetAPIKey(apiKey)
+			if err != nil {
+				return err
+			}
+			err = SetOutputDirectory(outputPath)
+			if err != nil {
+				return err
+			}
+			fmt.Print("Successfully saved your parameters. Run gowhisper again to see the available commands and how to use them.")
+			return nil
+		},
+	}
+
+	err := setupApp.Run(os.Args)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+}
 
 func main() {
 	err := LoadEnvironmentVariables()
@@ -15,113 +57,65 @@ func main() {
 		log.Fatal(err)
 	}
 
+	if setupFirst() {
+		setupVariables()
+		return
+	}
+
 	app := &cli.App{
 		//Name: "gowhisper",
-		Usage: "Easily convert audio files into audio.\n" +
-			"Run \"gowhisper i\" to install the program and see to add it to your system's path variable." +
-			"That way you can call this program from anywhere.\n" +
-			"This will also create a .whisperenv file which stores your credentials and output directory.",
+		Usage:     "Easily transcribe audio of video files.\n",
+		UsageText: "gowhisper.exe transcribe some_file.mp3",
+
 		Commands: cli.Commands{
 			{
-				Name:    "install",
-				Aliases: []string{"i"},
-				Usage:   "Creates .env file and shows how to add a path variable.",
+				Name:      "setkey",
+				Aliases:   []string{"sk"},
+				Usage:     "Save a new openai api key",
+				UsageText: "gowhisper sekey",
 				Action: func(c *cli.Context) error {
-					executablePath, err := os.Executable()
-					if err != nil {
-						return cli.Exit("Could not get current executable path.", 1)
-					}
-
-					programDir := filepath.Dir(executablePath)
-					fmt.Printf("To add the program directory to PATH, run the following command the following to your path environment variable\n")
-					fmt.Printf("%s\n", programDir)
-					envFilePath := programDir + "\\.whisperenv"
-					_, err = os.Stat(envFilePath)
-					if err != nil {
-						file, err := os.Create(programDir + "\\.whisperenv")
-						if err != nil {
-							return cli.Exit("Could not create .whisperenv file", 1)
-						} else {
-							_ = file.Close()
-							return cli.Exit("Created .whisperenv file", 0)
-						}
-					} else {
-						return cli.Exit(".whisperenv file already exists. Did not overwrite it.", 0)
-					}
-				},
-			},
-			{
-				Name:    "setkey",
-				Aliases: []string{"sk"},
-				Usage:   "Saves the openai API Key.",
-				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:    "key",
-						Aliases: []string{"k"},
-						Usage:   "Your openai key",
-					},
-				},
-				Action: func(c *cli.Context) error {
-					apiKey := c.String("key")
-					if apiKey == "" {
-						return cli.Exit("Please provide an API key.", 1)
-					}
+					reader := bufio.NewReader(os.Stdin)
+					apiKey := askAPIKey(reader)
 					err := SetAPIKey(apiKey)
-					if err != nil {
-						return cli.Exit("Something failed saving API key.", 1)
-					}
-					fmt.Printf("Set API Key: %s\n", apiKey)
-					return nil
+					return err
 				},
 			},
 			{
-				Name:    "setPath",
-				Aliases: []string{"sp"},
-				Usage:   "Sets the full path to the output directory",
-				Flags: []cli.Flag{
-					&cli.StringFlag{
-						Name:    "folder",
-						Aliases: []string{"p", "f", "dir"},
-						Usage:   "The path to the output folder",
-					},
-				},
+				Name:      "setPath",
+				Aliases:   []string{"sp"},
+				Usage:     "Save output files to a different directory",
+				UsageText: "gowhisper setPath <absolute path>",
 				Action: func(c *cli.Context) error {
-					path := c.String("folder")
-					if path == "" {
-						return cli.Exit("Please provide an output directory.", 1)
-					}
-					path = strings.TrimRight(path, "\\")
-
-					_, err := os.Stat(path)
-					if err != nil {
-						if os.IsNotExist(err) {
-							return cli.Exit("Output directory does not exist.", 1)
-						}
-					}
-					err = SetOutputDirectory(path)
-					if err != nil {
-						return cli.Exit("Something failed saving output path.", 1)
-					}
-					fmt.Printf("Set output directory: %s\n", path)
-					return nil
+					reader := bufio.NewReader(os.Stdin)
+					outputPath := loopOutputPath(reader)
+					err := SetOutputDirectory(outputPath)
+					return err
 				},
 			},
 			{
-				Name:    "transcribe",
-				Aliases: []string{"t"},
-				Usage:   "Test working directory",
+				Name:      "transcribe",
+				Aliases:   []string{"t"},
+				Usage:     "Transcribe audio of file file",
+				UsageText: "gowhisper transcribe -f your_file.mp3",
 				Flags: []cli.Flag{
 					&cli.StringFlag{
 						Name:    "file",
 						Aliases: []string{"f", "a"},
-						Usage:   "Name of the audio file",
+						Usage:   "Name of the file",
 					},
 				},
 				Action: func(c *cli.Context) error {
 					filename := c.String("file")
+					if !fileExists(filename) {
+						filename = c.Args().First()
+						if !fileExists(filename) {
+							return errors.New("No correct filename was provided.")
+						}
+					}
+
 					fmt.Println("Filename provided: " + filename)
-					transcribe(filename)
-					return nil
+					err := transcribe(filename)
+					return err
 				},
 			},
 		},

@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"github.com/joho/godotenv"
-	"log"
 	"os"
 	"path/filepath"
 )
@@ -16,30 +15,48 @@ func fileExists(filename string) bool {
 	return !info.IsDir()
 }
 
+func directoryExists(dirname string) bool {
+	_, err := os.Stat(dirname)
+	if err == nil {
+		return true
+	}
+	if os.IsNotExist(err) {
+		return false
+	}
+	return false
+}
+
+func createEnvFile() error {
+	_, err := os.Create(getEnvPath())
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func checkEnvPath() string {
+	envFilePath := getEnvPath()
+	if fileExists(envFilePath) {
+		return envFilePath
+	}
+	return ""
+}
+
 func getEnvPath() string {
 	exePath, _ := os.Executable()
 
 	exeDirectory := filepath.Dir(exePath)
 
-	log.Println(exeDirectory)
-
 	envFilePath := filepath.Join(exeDirectory, ".whisperenv")
-	if fileExists(envFilePath) {
-		log.Println("Environment variable file found")
-	} else {
-		_, err := os.Create(envFilePath)
-		if err != nil {
-			return ""
-		}
-		log.Println("Created new environment file in executable directory")
-
-	}
 	return envFilePath
+
 }
 
 func LoadEnvironmentVariables() error {
-
-	envFilePath := getEnvPath()
+	envFilePath := checkEnvPath()
+	if envFilePath == "" {
+		return nil
+	}
 	err := godotenv.Load(envFilePath)
 	if err != nil {
 		return err
@@ -48,6 +65,9 @@ func LoadEnvironmentVariables() error {
 }
 
 func SetOutputDirectory(path string) error {
+	if path == "" {
+		return nil
+	}
 	updateString := "OUTPUTDIR=" + path
 	err := updateEnv(updateString)
 	if err != nil {
@@ -73,7 +93,7 @@ func updateEnv(variableString string) error {
 		fmt.Println(err)
 	}
 
-	envFilePath := getEnvPath()
+	envFilePath := checkEnvPath()
 
 	currentEnv, err := godotenv.Read(envFilePath)
 
