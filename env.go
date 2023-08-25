@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"github.com/joho/godotenv"
+	"log"
 	"os"
 	"path/filepath"
 )
@@ -96,15 +97,17 @@ func updateEnv(variableString string) error {
 	envFilePath := checkEnvPath()
 
 	currentEnv, err := godotenv.Read(envFilePath)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	for key, value := range newEnvVar {
 		currentEnv[key] = value
 	}
-
 	err = godotenv.Write(currentEnv, envFilePath)
-
 	if err != nil {
 		fmt.Println(err)
 	}
+
 	return nil
 }
