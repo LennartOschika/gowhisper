@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/sashabaranov/go-openai"
 	"os"
@@ -11,6 +12,9 @@ import (
 )
 
 func transcribe(audioFile string) error {
+	if audioFile == "" {
+		return errors.New("No audio file provided")
+	}
 	outputDir, ok := os.LookupEnv("OUTPUTDIR")
 	if !ok {
 		fmt.Println("Output directory is not set/found. Saving file in current directory.\n Use \"gowhisper sp -dir <directory>\" to set one.")

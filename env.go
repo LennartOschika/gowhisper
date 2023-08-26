@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"github.com/joho/godotenv"
 	"log"
@@ -56,9 +57,9 @@ func getEnvPath() string {
 func LoadEnvironmentVariables() error {
 	envFilePath := checkEnvPath()
 	if envFilePath == "" {
-		return nil
+		return errors.New("Could not find enviornment variables file")
 	}
-	err := godotenv.Load(envFilePath)
+	err := godotenv.Overload(envFilePath)
 	if err != nil {
 		return err
 	}
@@ -80,6 +81,7 @@ func SetOutputDirectory(path string) error {
 
 func SetAPIKey(apikey string) error {
 	updateString := "APIKEY=" + apikey
+
 	err := updateEnv(updateString)
 	if err != nil {
 		fmt.Println(err)
@@ -108,6 +110,7 @@ func updateEnv(variableString string) error {
 	if err != nil {
 		fmt.Println(err)
 	}
+	log.Println(envFilePath)
 
 	return nil
 }

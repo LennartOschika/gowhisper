@@ -3,26 +3,63 @@ package main
 import (
 	"errors"
 	"github.com/AlecAivazis/survey/v2"
+	"log"
 	"os"
 	"strings"
 )
 
+var functions = []struct {
+	Id        int
+	Name      string
+	Function  func() error
+	EnvVar    string
+	Obfuscate bool
+}{
+	{Id: 0, Name: "Transcribe video", Function: surveyTranscribe},
+	{Id: 1, Name: "Change output folder", Function: surveyOutputfolder, EnvVar: "OUTPUTDIR"},
+	{Id: 2, Name: "Change API key", Function: surveyAPIKey, EnvVar: "APIKEY", Obfuscate: true},
+}
+
+func getCurrentValue(variable string, obfuscate bool) string {
+	if variable == "" {
+		return ""
+	}
+	value := os.Getenv(variable)
+	if obfuscate {
+		value = "sk-****" + value[len(value)-5:]
+	}
+	return "Current: " + value
+}
+
+func getOptions() []string {
+	functionNames := make([]string, len(functions))
+	for index, fn := range functions {
+		functionNames[index] = fn.Name
+	}
+	return functionNames
+}
+
 func surveyWhatToDo() int {
 	var whatToDo int
-
 	prompt := &survey.Select{
 		Message: "What do you want to do:",
-		Options: []string{"Transcribe video", "Change output folder", "Change API key"},
+		Options: getOptions(),
+		Description: func(value string, index int) string {
+			for _, entry := range functions {
+				if entry.Id == index {
+					return getCurrentValue(entry.EnvVar, entry.Obfuscate)
+				}
+			}
+			return ""
+		},
 	}
-	survey.AskOne(prompt, &whatToDo)
+	err := survey.AskOne(prompt, &whatToDo)
+	log.Println(err)
 	return whatToDo
 }
 
 func surveyOutputfolder() error {
 	path := ""
-	//outputSelect := &survey.Input{
-	//	Message: "Output directory:",
-	//}
 
 	outputSelect := []*survey.Question{
 		{
@@ -53,7 +90,7 @@ func surveyAPIKey() error {
 }
 
 func surveyTranscribe() error {
-	prompt2 := &survey.Select{
+	prompt := &survey.Select{
 		Message: "File to transcribe: ",
 		Options: getFilenamesString(),
 		Filter: func(filter string, value string, index int) bool {
@@ -65,7 +102,7 @@ func surveyTranscribe() error {
 	}
 
 	file := ""
-	survey.AskOne(prompt2, &file)
+	survey.AskOne(prompt, &file)
 	return transcribe(file)
 }
 
