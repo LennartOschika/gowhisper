@@ -1,9 +1,7 @@
 package main
 
 import (
-	"github.com/urfave/cli/v2"
 	"log"
-	"os"
 )
 
 func setupFirst() bool {
@@ -13,63 +11,53 @@ func setupFirst() bool {
 	return false
 }
 
-func newInput() {
-	app := &cli.App{
-		Action: func(c *cli.Context) error {
-			option, err := promptCommand()
-			if err != nil {
-				return err
-			}
-
-			switch option {
-			case 0:
-				filename, err := promptFilename()
-				if err != nil {
-					return err
-				}
-				err = checkFile(filename)
-				if err != nil {
-					return err
-				}
-				return transcribe(filename)
-			case 1:
-				err := promptOutputfolder()
-				if err != nil {
-					return err
-				}
-
-			case 2:
-				err := promptAPIKey()
-				if err != nil {
-					return err
-				}
-				log.Println("Successfully set API key to new key.")
-			}
-
-			return nil
-		},
-	}
-	err := app.Run(os.Args)
-	if err != nil {
-		log.Fatal(err)
-	}
-}
-
 func main() {
-	err := LoadEnvironmentVariables()
-	if err != nil {
-		log.Fatal(err)
-	}
+
+	var err error
 
 	if setupFirst() {
-		//setupVariables()
 
-		err := createEnvFile()
+		err = createEnvFile()
 		if err != nil {
 			log.Fatal(err)
 		}
-		setupPromptUI()
+		setup()
+
 	}
 
-	newInput()
+	err = LoadEnvironmentVariables()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	method := surveyWhatToDo()
+	switch method {
+	case 0:
+		err = surveyTranscribe()
+		if err != nil {
+			log.Fatal(err)
+		}
+	case 1:
+		err := surveyOutputfolder()
+		if err != nil {
+			log.Fatal(err)
+		}
+	case 2:
+		err = surveyAPIKey()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+}
+
+func setup() {
+	err := surveyOutputfolder()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = surveyAPIKey()
+	if err != nil {
+		log.Fatal(err)
+	}
 }

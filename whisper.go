@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/sashabaranov/go-openai"
-	"github.com/urfave/cli/v2"
 	"os"
 	"path"
 	"path/filepath"
@@ -32,8 +31,7 @@ func transcribe(audioFile string) error {
 	fmt.Println("Transcribing video...")
 	resp, err := c.CreateTranscription(ctx, req)
 	if err != nil {
-		fmt.Println(err)
-		return cli.Exit("Could not create Transcription. See error above", 1)
+		return err
 	}
 
 	fullFilePath := filepath.Join(outputDir, audioFile)
@@ -43,7 +41,7 @@ func transcribe(audioFile string) error {
 	fmt.Printf("Creating file %s\n", fullFilePath)
 	f, err := os.Create(fullFilePath)
 	if err != nil {
-		return cli.Exit("Could not create outputfile "+fullFilePath, 1)
+		return err
 	}
 	defer f.Close()
 
